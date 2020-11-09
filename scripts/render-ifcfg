@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+
+import argparse
+import base64
+import jinja2
+import os
+
+IFCFG="""DEVICE={{ name }}
+BOOTPROTO=dhcp
+ONBOOT=yes
+TYPE=Ethernet
+IPV6INIT=no
+IPV4_DNS_PRIORITY=1
+DEFROUTE={{ defroute }}
+"""
+
+NM_DHCP_DISABLE="""[main]
+plugins=ifcfg-rh
+# Do not do automatic (DHCP/SLAAC) configuration on ethernet devices
+# with no other matching connections.
+no-auto-default=*
+# Ignore the carrier (cable plugged in) state when attempting to
+# activate static-IP connections.
+ignore-carrier=*
+"""
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--baremetal-interface", help="Baremetal interface names", required=True)
+    parser.add_argument("-p", "--provisioning-interface", help="Provisioning interface names", required=True)
+    parser.add_argument("-c", "--cluster-name", help="Cluster Name (dir under ./cluster/)", required=True)
+    args = parser.parse_args()
+
+    tmpl = jinja2.Template(IFCFG)
+
+    contents = []
+    data = tmpl.render(name=args.baremetal_interface, defroute='yes')
+    encoded_str= base64.b64encode(str.encode(data)).decode()
+    ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + args.baremetal_interface
+    contents.append({'name': ifcfg_file_name, 'source': encoded_str})
+
+    data = tmpl.render(name=args.provisioning_interface, defroute='no')
+    encoded_str= base64.b64encode(str.encode(data)).decode()
+    ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + args.provisioning_interface
+    contents.append({'name': ifcfg_file_name, 'source': encoded_str})
+
+    encoded_str= base64.b64encode(str.encode(NM_DHCP_DISABLE)).decode()
+    file_name = "/etc/NetworkManager/conf.d/10-worker-nm-disable-auto-config.conf"
+    contents.append({'name': file_name, 'source': encoded_str})
+
+    mc_tmpl_path = os.path.join(os.path.dirname(__file__), '../templates', 'mc.yaml.j2')
+    with open(mc_tmpl_path) as f:
+        template = jinja2.Template(f.read())
+    data = template.render(contents=contents)
+    data = "# Generate by render-cfg utility\n" + data
+
+    mc_file_dir = os.path.join(os.path.dirname(__file__), '../cluster', args.cluster_name)
+    if not os.path.exists(mc_file_dir):
+        os.makedirs(mc_file_dir)
+    mc_file_path = os.path.join(mc_file_dir, '99-dhcp-workaround-worker.yaml')
+    with open(mc_file_path, 'w') as f:
+        f.write(data)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+from shutil import copyfile
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--cluster-name", help="Cluster Name (dir under ./cluster/)", required=True)
+    args = parser.parse_args()
+
+    mc_tmpl_path = os.path.join(os.path.dirname(__file__), '../templates', 'systemd-custom.yaml')
+    mc_cluster_path = os.path.join(os.path.dirname(__file__), '../cluster', args.cluster_name , '99-systemd-custom.yaml')
+    copyfile(mc_tmpl_path, mc_cluster_path)
+
+if __name__ == "__main__":
+    main()
