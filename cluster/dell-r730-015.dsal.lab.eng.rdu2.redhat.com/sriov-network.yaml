@@ -1,0 +1,26 @@
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: intel-numa0-net1 
+  namespace: openshift-sriov-network-operator
+spec:
+  networkNamespace: example-cnf
+  #vlan: ''
+  resourceName: intel_numa0_res1
+  spoofChk: "on"
+  trust: "on"
+  ipam: '{ }'
+---
+apiVersion: sriovnetwork.openshift.io/v1
+kind: SriovNetwork
+metadata:
+  name: intel-numa0-net2 
+  namespace: openshift-sriov-network-operator
+spec:
+  networkNamespace: example-cnf
+  #vlan: ''
+  resourceName: intel_numa0_res2
+  spoofChk: "on"
+  trust: "on"
+  ipam: '{ }'
+

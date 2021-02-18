@@ -1,6 +1,5 @@
-# brq cluster
-export OPENSHIFT_RELEASE_TYPE=ga
-export OPENSHIFT_VERSION=4.5.0
+#export OPENSHIFT_RELEASE_TYPE=ga
+export OPENSHIFT_VERSION=stable-4.6
 export PERSONAL_PULL_SECRET=/home/kni/pull-secret.json
 export IP_STACK=v4
 export NUM_WORKERS=0
