@@ -1,0 +1,16 @@
+apiVersion: examplecnf.openshift.io/v1
+kind: TestPMDMac
+metadata:
+  name: testpmdmac1
+  namespace: example-cnf
+spec:
+  hostname: testpmd-app-569b65b488-dw8kj
+  nodename: worker-3
+  resources:
+  - devices:
+    - mac: 77:77:77:77:77:77
+      pci: 0000:37:0a.3
+    - mac: 77:77:77:77:77:78
+      pci: 0000:37:0b.6
+    name: openshift.io/intel_numa0_res1
+

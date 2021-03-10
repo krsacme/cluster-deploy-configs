@@ -9,5 +9,9 @@ fi
 
 sleep 2
 LIST=$(oc get nodes -o json | jq '.items[] .status.addresses[0].address' | tr -d '"')
-for i in  $LIST; do echo "Node - ${i}"; scp /tmp/prune-copy.sh core@$i:/tmp/; ssh core@$i 'sudo bash /tmp/prune-copy.sh;'; done
+for i in  $LIST; do
+    echo "Node - ${i}";
+    scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null /tmp/prune-copy.sh core@$i:/tmp/;
+    ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null core@$i 'sudo bash /tmp/prune-copy.sh;';
+done
 
