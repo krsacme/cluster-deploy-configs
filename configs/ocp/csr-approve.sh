@@ -1,8 +1,8 @@
 #!/bin/bash
 
 oc label mcp worker machineconfiguration.openshift.io/role=worker
-#oc patch mcp worker --type=merge -p '{"spec":{"maxUnavailable":2}}'
-#oc patch  schedulers.config.openshift.io cluster --type=merge -p '{"spec":{"mastersSchedulable":false}}'
+oc patch mcp worker --type=merge -p '{"spec":{"maxUnavailable":1}}'
+oc patch  schedulers.config.openshift.io cluster --type=merge -p '{"spec":{"mastersSchedulable":false}}'
 oc -n openshift-machine-api scale --replicas=3 $(oc -n openshift-machine-api get machineset -o name)
 
 while true; do

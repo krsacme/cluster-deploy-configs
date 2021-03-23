@@ -26,23 +26,27 @@ ignore-carrier=*
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--baremetal-interface", help="Baremetal interface names", required=True)
-    parser.add_argument("-p", "--provisioning-interface", help="Provisioning interface names", required=True)
+    parser.add_argument("-b", "--default-interfaces", help="Interface names with default route (comma separated)", required=True)
+    parser.add_argument("-p", "--interfaces", help="Interface names (comma separated)", required=True)
     parser.add_argument("-c", "--cluster-name", help="Cluster Name (dir under ./cluster/)", required=True)
     args = parser.parse_args()
 
     tmpl = jinja2.Template(IFCFG)
 
     contents = []
-    data = tmpl.render(name=args.baremetal_interface, defroute='yes')
-    encoded_str= base64.b64encode(str.encode(data)).decode()
-    ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + args.baremetal_interface
-    contents.append({'name': ifcfg_file_name, 'source': encoded_str})
+    ifaces = args.default_interfaces.split(",")
+    for iface in ifaces:
+        data = tmpl.render(name=iface, defroute='yes')
+        encoded_str= base64.b64encode(str.encode(data)).decode()
+        ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + iface
+        contents.append({'name': ifcfg_file_name, 'source': encoded_str})
 
-    data = tmpl.render(name=args.provisioning_interface, defroute='no')
-    encoded_str= base64.b64encode(str.encode(data)).decode()
-    ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + args.provisioning_interface
-    contents.append({'name': ifcfg_file_name, 'source': encoded_str})
+    ifaces = args.interfaces.split(",")
+    for iface in ifaces:
+        data = tmpl.render(name=iface, defroute='no')
+        encoded_str= base64.b64encode(str.encode(data)).decode()
+        ifcfg_file_name = "/etc/sysconfig/network-scripts/ifcfg-" + iface
+        contents.append({'name': ifcfg_file_name, 'source': encoded_str})
 
     encoded_str= base64.b64encode(str.encode(NM_DHCP_DISABLE)).decode()
     file_name = "/etc/NetworkManager/conf.d/10-worker-nm-disable-auto-config.conf"

@@ -20,6 +20,9 @@ spec:
       - size: "1G"
         count: 32
         node: 0
+      - size: "1G"
+        count: 32
+        node: 1
   numa:
     topologyPolicy: "single-numa-node"
   nodeSelector:

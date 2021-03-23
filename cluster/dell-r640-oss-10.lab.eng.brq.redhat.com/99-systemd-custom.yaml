@@ -1,0 +1,21 @@
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-systemd-custom
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: hostname-generate.service
+        enabled: true
+        contents: |
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/bash -c "[ -f /etc/gen.host ] || echo 'worker-'$((RANDOM % 100))>/etc/hostname; touch /etc/gen.host"
+          [Install]
+          WantedBy=multi-user.target

@@ -1,0 +1,21 @@
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-systemd-custom-3
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: hostname-generate-3.service
+        enabled: false
+        contents: |
+          [Service]
+          Type=oneshot
+          ExecStart=/usr/bin/bash -c "hostname"
+          [Install]
+          WantedBy=multi-user.target

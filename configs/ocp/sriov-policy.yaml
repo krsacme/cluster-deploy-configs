@@ -13,6 +13,7 @@ spec:
   nicSelector:
     pfNames:
     - enp6s0f0#0-7
+    - enp130s0f0#0-7
   deviceType: vfio-pci
 ---
 apiVersion: sriovnetwork.openshift.io/v1
@@ -30,4 +31,5 @@ spec:
   nicSelector:
     pfNames:
     - enp6s0f0#8-15
+    - enp130s0f0#8-15
   deviceType: vfio-pci
