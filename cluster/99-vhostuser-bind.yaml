@@ -1,0 +1,44 @@
+---
+apiVersion: machineconfiguration.openshift.io/v1
+kind: MachineConfig
+metadata:
+  labels:
+    machineconfiguration.openshift.io/role: worker
+  name: 99-vhostuser-bind
+spec:
+  config:
+    ignition:
+      version: 2.2.0
+    systemd:
+      units:
+      - name: vhostuser-bind.service
+        enabled: true
+        contents: |
+          [Unit]
+          Description=Vhostuser Interface vfio-pci Bind
+
+          [Service]
+          Type=oneshot
+          EnvironmentFile=/etc/vhostuser-bind.conf
+          ExecStart=/usr/local/bin/vhostuser $ARG
+
+          [Install]
+          WantedBy=multi-user.target
+
+    storage:
+      files:
+      - contents:
+          source: data:text/plain;charset=utf-8;base64,dmZpby1wY2kK
+        filesystem: root
+        mode: 0644
+        path: /etc/modules-load.d/vfio-pci.conf
+      - contents:
+          source: data:text/plain;charset=utf-8;base64,IyEvYmluL2Jhc2gKCiMgTk9URToganEgaXMgcHJlc2VudCBpbiB0aGUgY29yZW9zIHdvcmtlciBjcmVhdGVkLCBmaW5kIGlmIGF2YWlsYWJsZSBpbiBhbGwgdmVyc2lvbnMKCnNldCAtZQppZiBbWyAiJCMiIC1sdCAxIF1dOyB0aGVuCiAgICBlY2hvICJOZXdvcmsgSUQgbm90IHByb3ZpZGVkLCBub3RoaW5nIHRvIGRvIgogICAgZXhpdApmaQoKTldfREFUQT0iL3Zhci9jb25maWcvb3BlbnN0YWNrL2xhdGVzdC9uZXR3b3JrX2RhdGEuanNvbiIKZnVuY3Rpb24gcGFyc2VOZXR3b3JrKCkgewogICAgbG9jYWwgbndpZD0kMQogICAgZWNobyAiTmV0d29yayBJRDogJG53aWQiCiAgICBsaW5rcz0kKGpxICcubmV0d29ya3NbXSB8IHNlbGVjdCgubmV0d29ya19pZCA9PSAiJyRud2lkJyIpIHwgLmxpbmsnICROV19EQVRBKQogICAgaWYgWyAkeyNsaW5rc30gLWd0IDAgXTsgdGhlbgogICAgICAgIGZvciBsaW5rIGluICRsaW5rczsgZG8KICAgICAgICAgICAgZWNobyAiTGluayBOYW1lOiAkbGluayIKICAgICAgICAgICAgbWFjPSQoanEgLXIgJy5saW5rc1tdIHwgc2VsZWN0KC5pZCA9PSAnJGxpbmsnKSB8IC5ldGhlcm5ldF9tYWNfYWRkcmVzcycgICROV19EQVRBKQogICAgICAgICAgICBpZiBbIC1uICRtYWMgXTsgdGhlbgogICAgICAgICAgICAgICAgYmluZERyaXZlciAkbWFjCiAgICAgICAgICAgIGZpCiAgICAgICAgZG9uZQogICAgZmkKfQoKZnVuY3Rpb24gYmluZERyaXZlcigpIHsKICAgIGxvY2FsIG1hYz0kMQogICAgZWNobyAiTWFjIEFkZHJlc3M6ICRtYWMiCiAgICBmb3IgZmlsZSBpbiAvc3lzL2NsYXNzL25ldC8qOyBkbwogICAgICAgIGRldl9tYWM9JChjYXQgJGZpbGUvYWRkcmVzcykKICAgICAgICBpZiBbWyAiJG1hYyIgPT0gIiRkZXZfbWFjIiBdXTsgdGhlbgogICAgICAgICAgICBuYW1lPSR7ZmlsZSMjKlwvfQogICAgICAgICAgICBidXNfc3RyPSQoZXRodG9vbCAtaSAkbmFtZSB8IGdyZXAgYnVzKQogICAgICAgICAgICBkZXZfdD0ke2J1c19zdHIjKjp9CiAgICAgICAgICAgIGRldj0ke2Rldl90I1tbOnNwYWNlOl1dfQogICAgICAgICAgICBlY2hvICJQQ0kgQWRkcmVzczogJGRldiIKCiAgICAgICAgICAgIGRldmxpbms9Ii9zeXMvYnVzL3BjaS9kZXZpY2VzLyRkZXYiCiAgICAgICAgICAgIHN5c3BhdGg9JChyZWFscGF0aCAiJGRldmxpbmsiKQogICAgICAgICAgICBpZiBbICEgLWYgIiRzeXNwYXRoL2RyaXZlci91bmJpbmQiIF07IHRoZW4KICAgICAgICAgICAgICAgIGVjaG8gIkZpbGUgJHN5c3BhdGgvZHJpdmVyL3VuYmluZCBub3QgZm91bmQiCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgICAgICBmaQogICAgICAgICAgICBlY2hvICIkZGV2Ij4iJHN5c3BhdGgvZHJpdmVyL3VuYmluZCIKCiAgICAgICAgICAgIGlmIFsgISAtZiAiJHN5c3BhdGgvZHJpdmVyX292ZXJyaWRlIiBdOyB0aGVuCiAgICAgICAgICAgICAgICBlY2hvICJGaWxlICRzeXNwYXRoL2RyaXZlcl9vdmVycmlkZSBub3QgZm91bmQiCiAgICAgICAgICAgICAgICBicmVhawogICAgICAgICAgICBmaQogICAgICAgICAgICBlY2hvICJ2ZmlvLXBjaSI+IiRzeXNwYXRoL2RyaXZlcl9vdmVycmlkZSIKCiAgICAgICAgICAgIGlmIFsgISAtZiAiL3N5cy9idXMvcGNpL2RyaXZlcnMvdmZpby1wY2kvYmluZCIgXTsgdGhlbgogICAgICAgICAgICAgICAgZWNobyAiRmlsZSAvc3lzL2J1cy9wY2kvZHJpdmVycy92ZmlvLXBjaS9iaW5kIG5vdCBmb3VuZCIKICAgICAgICAgICAgICAgIGJyZWFrCiAgICAgICAgICAgIGZpCiAgICAgICAgICAgIGVjaG8gIiRkZXYiPiIvc3lzL2J1cy9wY2kvZHJpdmVycy92ZmlvLXBjaS9iaW5kIgoJICAgIGVjaG8gIkRldmljZSAkZGV2IGJvdW5kIHRvIHZmaW8tcGNpIgogICAgICAgIGZpCiAgICBkb25lCn0KCmZvciBud2lkIGluICIkQCI7IGRvCiAgICBwYXJzZU5ldHdvcmsgJG53aWQKZG9uZQo=
+        filesystem: root
+        mode: 0744
+        path: /usr/local/bin/vhostuser
+      - contents:
+          source: data:text/plain;charset=utf-8;base64,QVJHPSJkNjQ0MWE5Ni1iMDUwLTQxMTktODVkZi03Y2JjYTVkMTgzMTQgNjM2M2ZkYzYtODc1NC00MDc1LTkwNDAtNGE0NGU0ODFlZjE4Ig==
+        filesystem: root
+        mode: 0644
+        path: /etc/vhostuser-bind.conf

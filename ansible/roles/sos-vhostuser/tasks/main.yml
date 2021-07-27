@@ -1,0 +1,25 @@
+---
+- name: add service file to list
+  set_fact:
+    systemd:
+      - name: "{{ bind_service_name }}"
+        source: "{{ lookup('file', bind_service_file_path) }}"
+
+- name: convert comman separated to space separated networks
+  set_fact:
+    network_ids_parsed: "{{ network_ids.split(',') | join(' ') }}"
+
+- name: create contents list
+  set_fact:
+    contents:
+      - name: "{{ vfio_module_filename }}"
+        source: "{{ lookup('file', vfio_module_file_path) }}"
+      - name: "{{ exec_script_filename }}"
+        source: "{{ lookup('file', exec_script_file_path) }}"
+        mode: "0744"
+      - name: "{{ nwid_conf_filename }}"
+        source: "{{ lookup('template', nwid_conf_file_path) }}"
+
+- name: create mc config
+  k8s:
+    definition: "{{ lookup('template', mc_file_path) }}"

@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# NOTE: jq is present in the coreos worker created, find if available in all versions
+
+set -e
+if [[ "$#" -lt 1 ]]; then
+    echo "Nework ID not provided, nothing to do"
+    exit
+fi
+
+NW_DATA="/var/config/openstack/latest/network_data.json"
+function parseNetwork() {
+    local nwid=$1
+    echo "Network ID: $nwid"
+    links=$(jq '.networks[] | select(.network_id == "'$nwid'") | .link' $NW_DATA)
+    if [ ${#links} -gt 0 ]; then
+        for link in $links; do
+            echo "Link Name: $link"
+            mac=$(jq -r '.links[] | select(.id == '$link') | .ethernet_mac_address'  $NW_DATA)
+            if [ -n $mac ]; then
+                bindDriver $mac
+            fi
+        done
+    fi
+}
+
+function bindDriver() {
+    local mac=$1
+    echo "Mac Address: $mac"
+    for file in /sys/class/net/*; do
+        dev_mac=$(cat $file/address)
+        if [[ "$mac" == "$dev_mac" ]]; then
+            name=${file##*\/}
+            bus_str=$(ethtool -i $name | grep bus)
+            dev_t=${bus_str#*:}
+            dev=${dev_t#[[:space:]]}
+            echo "PCI Address: $dev"
+
+            devlink="/sys/bus/pci/devices/$dev"
+            syspath=$(realpath "$devlink")
+            if [ ! -f "$syspath/driver/unbind" ]; then
+                echo "File $syspath/driver/unbind not found"
+                break
+            fi
+            echo "$dev">"$syspath/driver/unbind"
+
+            if [ ! -f "$syspath/driver_override" ]; then
+                echo "File $syspath/driver_override not found"
+                break
+            fi
+            echo "vfio-pci">"$syspath/driver_override"
+
+            if [ ! -f "/sys/bus/pci/drivers/vfio-pci/bind" ]; then
+                echo "File /sys/bus/pci/drivers/vfio-pci/bind not found"
+                break
+            fi
+            echo "$dev">"/sys/bus/pci/drivers/vfio-pci/bind"
+	    echo "Device $dev bound to vfio-pci"
+        fi
+    done
+}
+
+for nwid in "$@"; do
+    parseNetwork $nwid
+done

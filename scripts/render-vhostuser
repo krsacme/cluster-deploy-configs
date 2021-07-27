@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+
+import argparse
+import base64
+import jinja2
+import os
+
+CONF="""ARG="{{ network }}"\n"""
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--network", help="OpenStack Neutron Network of Vhostuser interface, comma separated list", required=True)
+    args = parser.parse_args()
+
+    contents = []
+    systemd = []
+    mc_name = "99-vhostuser-bind"
+    network = ' '.join(args.network.split(','))
+
+    # Service
+    svc = os.path.join(os.path.dirname(__file__), '../templates', 'vhostuser-bind.service')
+    with open(svc) as f:
+        name = "vhostuser-bind.service"
+        systemd.append({'name': name, 'service': f.read()})
+
+    # vfio module load
+    encoded_str= base64.b64encode(str.encode("vfio-pci\n")).decode()
+    file_name = "/etc/modules-load.d/vfio-pci.conf"
+    contents.append({'name': file_name, 'source': encoded_str})
+
+    # Script
+    svc = os.path.join(os.path.dirname(__file__), '../templates', 'vhostuser')
+    with open(svc) as f:
+        encoded_str= base64.b64encode(str.encode(f.read())).decode()
+        file_name = "/usr/local/bin/vhostuser"
+        contents.append({'name': file_name, 'source': encoded_str, 'mode': '0744'})
+
+    # Conf
+    tmpl = jinja2.Template(CONF)
+    data = tmpl.render(network=network)
+    encoded_str= base64.b64encode(str.encode(data)).decode()
+    file_name = "/etc/vhostuser-bind.conf"
+    contents.append({'name': file_name, 'source': encoded_str})
+
+    mc_tmpl_path = os.path.join(os.path.dirname(__file__), '../templates', 'mc.yaml.j2')
+    with open(mc_tmpl_path) as f:
+        template = jinja2.Template(f.read())
+    data = template.render(contents=contents, mc_name=mc_name, systemd=systemd)
+
+    mc_file_dir = os.path.join(os.path.dirname(__file__), '../cluster')
+    if not os.path.exists(mc_file_dir):
+        os.makedirs(mc_file_dir)
+    mc_file_path = os.path.join(mc_file_dir, '99-vhostuser-bind.yaml')
+    with open(mc_file_path, 'w') as f:
+        f.write(data)
+
+if __name__ == "__main__":
+    main()
