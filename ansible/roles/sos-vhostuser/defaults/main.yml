@@ -1,5 +1,6 @@
 ---
 network_ids: ""
+resource_names: ""
 
 mc_name: "99-vhostuser-bind"
 mc_file_path: "mc.yaml.j2"
@@ -22,3 +23,4 @@ nwid_conf_file_path: "vhostuser-bind.conf.j2"
 
 contents: []
 systemd: []
+network_resource_map: {}

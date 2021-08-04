@@ -8,25 +8,37 @@ if [[ "$#" -lt 1 ]]; then
     exit
 fi
 
+list='{"resourceList":[]}'
+source /etc/vhostuser-bind.conf
+
 NW_DATA="/var/config/openstack/latest/network_data.json"
 function parseNetwork() {
     local nwid=$1
-    echo "Network ID: $nwid"
+    local pcis=()
+    local entry='{"resourceName":"","selectors":{"drivers":["vfio-pci"],"pciAddresses":[]}}'
+    res=$(jq 'to_entries[]|select(.key == "'"$nwid"'")|.value' <<< $MAP)
+    echo "Network ID is $nwid and resource name is $res"
     links=$(jq '.networks[] | select(.network_id == "'$nwid'") | .link' $NW_DATA)
+    entry=$(jq -r '.resourceName = '"$res" <<< $entry)
     if [ ${#links} -gt 0 ]; then
         for link in $links; do
             echo "Link Name: $link"
             mac=$(jq -r '.links[] | select(.id == '$link') | .ethernet_mac_address'  $NW_DATA)
             if [ -n $mac ]; then
-                bindDriver $mac
+                pci=$(bindDriver $mac)
+                pci_ret=$?
+                if [[ "$pci_ret" -eq 0 ]]; then
+                    entry=$(jq -c -r '.selectors.pciAddresses += ["'$pci'"]' <<< $entry)
+                fi
             fi
         done
     fi
+    list=$(jq -c -r '.resourceList += ['$entry']' <<< $list)
 }
 
 function bindDriver() {
     local mac=$1
-    echo "Mac Address: $mac"
+    local res=$2
     for file in /sys/class/net/*; do
         dev_mac=$(cat $file/address)
         if [[ "$mac" == "$dev_mac" ]]; then
@@ -34,28 +46,29 @@ function bindDriver() {
             bus_str=$(ethtool -i $name | grep bus)
             dev_t=${bus_str#*:}
             dev=${dev_t#[[:space:]]}
-            echo "PCI Address: $dev"
+
+            echo $dev
 
             devlink="/sys/bus/pci/devices/$dev"
             syspath=$(realpath "$devlink")
             if [ ! -f "$syspath/driver/unbind" ]; then
                 echo "File $syspath/driver/unbind not found"
-                break
+                return 1
             fi
             echo "$dev">"$syspath/driver/unbind"
 
             if [ ! -f "$syspath/driver_override" ]; then
                 echo "File $syspath/driver_override not found"
-                break
+                return 1
             fi
             echo "vfio-pci">"$syspath/driver_override"
 
             if [ ! -f "/sys/bus/pci/drivers/vfio-pci/bind" ]; then
                 echo "File /sys/bus/pci/drivers/vfio-pci/bind not found"
-                break
+                return 1
             fi
             echo "$dev">"/sys/bus/pci/drivers/vfio-pci/bind"
-	    echo "Device $dev bound to vfio-pci"
+	    return 0
         fi
     done
 }
@@ -63,3 +76,5 @@ function bindDriver() {
 for nwid in "$@"; do
     parseNetwork $nwid
 done
+mkdir -p /var/lib/vhostuser/
+echo $list>/var/lib/vhostuser/vhost.json

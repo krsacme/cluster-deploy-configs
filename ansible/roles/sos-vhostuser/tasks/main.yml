@@ -9,6 +9,12 @@
   set_fact:
     network_ids_parsed: "{{ network_ids.split(',') | join(' ') }}"
 
+- set_fact:
+    network_resource_map: "{{ network_resource_map|combine({ item.0 : item.1 }) }}"
+  with_together:
+    - "{{ network_ids.split(',') }}"
+    - "{{ resource_names.split(',') }}"
+
 - name: create contents list
   set_fact:
     contents:
@@ -23,3 +29,8 @@
 - name: create mc config
   k8s:
     definition: "{{ lookup('template', mc_file_path) }}"
+
+# Change it to host-device plugin later
+- name: create device plugin for vhostuser
+  k8s:
+    definition: "{{ lookup('template', 'sriov-device-plugin-ds.yaml') }}"
